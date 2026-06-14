@@ -116,7 +116,13 @@ export default function LeadForm({
     try {
       const res = await fetch(
         `${CRM_CONSENT_API}/${consentToken}/firmar`,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acepta_comunicaciones: commercialAccepted,
+          }),
+        },
       );
       const data = (await res.json().catch(() => null)) as
         | { ok?: boolean; error?: string; message?: string }
