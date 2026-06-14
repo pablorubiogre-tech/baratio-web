@@ -1,26 +1,142 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  color: #13233b;
 }
+
+::selection {
+  background-color: rgba(0, 175, 239, 0.25);
+  color: #13233b;
+}
+
+/* Hero card silhouette (Atlas-style): top-left step (logo notch),
+   bottom-right diagonal chamfer, every join rounded via quadratic curves.
+   Applied as an SVG mask to the image layer only, so content is never cut.
+   Mobile keeps a plain rounded rectangle. */
+.hero-mask {
+  border-radius: 32px;
+  overflow: hidden;
+}
+
+.hero-overlay-dark {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 20, 40, 0.8);
+}
+
+.hero-overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(6, 11, 20, 0.9) 0%,
+    rgba(6, 11, 20, 0.4) 45%,
+    transparent 72%
+  );
+}
+
+@media (min-width: 1024px) {
+  .hero-mask {
+    border-radius: 0;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 820' preserveAspectRatio='none'%3E%3Cpath d='M338 0 L1408 0 Q1440 0 1440 32 L1440 680 Q1440 712 1408 712 L1230 712 Q1206 712 1192 730 L1136 802 Q1124 820 1102 820 L32 820 Q0 820 0 788 L0 140 Q0 108 32 108 L210 108 Q234 108 248 90 L304 18 Q316 0 338 0 Z' fill='%23fff'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 820' preserveAspectRatio='none'%3E%3Cpath d='M338 0 L1408 0 Q1440 0 1440 32 L1440 680 Q1440 712 1408 712 L1230 712 Q1206 712 1192 730 L1136 802 Q1124 820 1102 820 L32 820 Q0 820 0 788 L0 140 Q0 108 32 108 L210 108 Q234 108 248 90 L304 18 Q316 0 338 0 Z' fill='%23fff'/%3E%3C/svg%3E")
+      center / 100% 100% no-repeat;
+  }
+
+  /* Logo pocket height = same proportion as the SVG mask notch (108/820) */
+  .hero-notch-h {
+    height: clamp(96px, calc(90vh * 108 / 820), 124px);
+    min-height: 96px;
+  }
+
+  /* Desktop: keep the dark mood on the left, lighter behind the form */
+  .hero-overlay-dark {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 46%,
+      transparent 68%
+    );
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 46%,
+      transparent 68%
+    );
+  }
+}
+
+/* Reusable glassmorphism panel: translucent white fill + blur, luminous
+   edge (::before) and top light reflection (::after). Reused on the
+   consent page. Must sit over imagery to show the frosted effect. */
+.glass-panel {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-radius: 24px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.45),
+    rgba(255, 255, 255, 0.04) 40%,
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+
+/* Botón "listo": gradiente azul→cyan con glow en loop suave */
+@keyframes glow-soft {
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(0, 175, 239, 0.15);
+  }
+  50% {
+    box-shadow: 0 4px 28px rgba(0, 175, 239, 0.35);
+  }
+}
+
+.btn-ready {
+  background: linear-gradient(135deg, #1a5a9e, #00afef) !important;
+  animation: glow-soft 3s ease-in-out infinite;
+}
+
