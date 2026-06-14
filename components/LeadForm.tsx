@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, Phone, User } from "lucide-react";
+import { ArrowRight, Check, Phone, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  CRM_CONSENT_API,
+  type ConsentInitialState,
+} from "@/lib/consentimiento";
 
 const CONSENT_TEXT_PRIVACY =
   "Acepto la Política de Privacidad y el uso de mis datos para gestionar mi solicitud.";
@@ -15,6 +19,8 @@ export interface LeadFormProps {
   modo?: "lead" | "consentimiento";
   nombreInicial?: string;
   telefonoInicial?: string;
+  consentToken?: string;
+  consentInitialState?: ConsentInitialState;
 }
 
 function isValidName(value: string): boolean {
@@ -33,6 +39,8 @@ export default function LeadForm({
   modo = "lead",
   nombreInicial = "",
   telefonoInicial = "",
+  consentToken = "",
+  consentInitialState = "pendiente",
 }: LeadFormProps) {
   const isConsentimiento = modo === "consentimiento";
   const primerNombre = nombreInicial?.split(" ")[0] || "";
@@ -46,6 +54,8 @@ export default function LeadForm({
   const [privacyAccepted, setPrivacyAccepted] = useState(isConsentimiento);
   const [commercialAccepted, setCommercialAccepted] = useState(isConsentimiento);
   const [confirmed, setConfirmed] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [consentError, setConsentError] = useState("");
 
   const [nombreTocado, setNombreTocado] = useState(false);
   const [telefonoTocado, setTelefonoTocado] = useState(false);
@@ -94,11 +104,41 @@ export default function LeadForm({
     }, 3000);
   }
 
-  function handleConsentSign() {
-    // TODO: llamar a la API del CRM (app.baratio.es/api/consentimientos/firmar)
-    // pasando el token de la URL para registrar IP, fecha, hora y user agent
-    // y actualizar el estado del consentimiento a "firmado"
-    setConfirmed(true);
+  async function handleConsentSign() {
+    if (!consentToken) {
+      setConsentError("No se pudo identificar tu enlace de consentimiento.");
+      return;
+    }
+
+    setConsentError("");
+    setSigning(true);
+
+    try {
+      const res = await fetch(
+        `${CRM_CONSENT_API}/${consentToken}/firmar`,
+        { method: "POST" },
+      );
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string; message?: string }
+        | null;
+
+      if (res.ok && data?.ok) {
+        setConfirmed(true);
+        return;
+      }
+
+      setConsentError(
+        data?.error ||
+          data?.message ||
+          "No se pudo registrar tu autorización. Inténtalo de nuevo.",
+      );
+    } catch {
+      setConsentError(
+        "Error de conexión. Comprueba tu red e inténtalo de nuevo.",
+      );
+    } finally {
+      setSigning(false);
+    }
   }
 
   function handleLeadSubmit() {
@@ -125,7 +165,8 @@ export default function LeadForm({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isConsentimiento) {
-      handleConsentSign();
+      if (signing) return;
+      void handleConsentSign();
       return;
     }
     handleLeadSubmit();
@@ -135,6 +176,49 @@ export default function LeadForm({
     "w-full rounded-xl border bg-white/[0.05] py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/55 outline-none transition focus:border-accent focus:shadow-[0_0_0_3px_rgba(0,175,239,0.18)]";
   const inputReadOnly =
     "cursor-default border-white/[0.08] bg-white/[0.03] text-white/75 focus:border-white/[0.08] focus:shadow-none";
+
+  if (isConsentimiento && consentInitialState === "invalido") {
+    return (
+      <div className="glass-panel p-6">
+        <div className="relative z-10 py-4 text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15">
+            <X
+              size={28}
+              strokeWidth={2.5}
+              className="text-red-400"
+              aria-hidden
+            />
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-white">
+            Enlace no válido
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-white/80">
+            Este enlace no es válido o ha caducado.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isConsentimiento && consentInitialState === "firmado") {
+    return (
+      <div className="glass-panel p-6">
+        <div className="relative z-10 py-4 text-center">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-accent/15">
+            <Check
+              size={28}
+              strokeWidth={2.5}
+              className="text-accent"
+              aria-hidden
+            />
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-white">
+            Ya has firmado este consentimiento. ¡Gracias!
+          </h2>
+        </div>
+      </div>
+    );
+  }
 
   if (isConsentimiento && confirmed) {
     return (
@@ -277,13 +361,20 @@ export default function LeadForm({
 
           <button
             type="submit"
+            disabled={signing}
             className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-500 hover:brightness-110 active:scale-[0.98] ${
               isConsentimiento || canSubmit ? "btn-ready" : "bg-[#1A5A9E]"
-            }`}
+            } ${signing ? "cursor-wait opacity-80" : ""}`}
           >
             {isConsentimiento ? "ACEPTO Y FIRMO" : "Solicitar llamada"}
             {!isConsentimiento && <ArrowRight size={16} strokeWidth={2.4} />}
           </button>
+
+          {isConsentimiento && consentError && (
+            <p className="mt-2 text-center text-xs text-red-400/70">
+              {consentError}
+            </p>
+          )}
 
           {!isConsentimiento && mensajeBoton && (
             <p className="mt-2 text-center text-xs text-red-400/70">

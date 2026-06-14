@@ -18,13 +18,19 @@ const features: { Icon: LucideIcon; label: string }[] = [
 
 type HeroProps = Pick<
   LeadFormProps,
-  "modo" | "nombreInicial" | "telefonoInicial"
+  | "modo"
+  | "nombreInicial"
+  | "telefonoInicial"
+  | "consentToken"
+  | "consentInitialState"
 >;
 
 export default function Hero({
   modo = "lead",
   nombreInicial,
   telefonoInicial,
+  consentToken,
+  consentInitialState,
 }: HeroProps = {}) {
   return (
     <section id="top" className="bg-white px-4 pb-8 pt-4">
@@ -47,8 +53,8 @@ export default function Hero({
             <Navbar />
 
             <div className="flex flex-1 items-center px-7 py-8 sm:px-10 lg:px-10 lg:py-10">
-              <div className="grid w-full items-center gap-10 lg:grid-cols-12 lg:gap-8">
-                <div className="flex max-w-xl flex-col lg:col-span-7">
+              <div className="flex w-full flex-col gap-10 md:grid md:grid-cols-1 md:items-center lg:grid-cols-12 lg:gap-8">
+                <div className="order-2 flex max-w-xl flex-col md:order-none lg:col-span-7">
                   <span className="inline-flex w-fit items-center rounded-full border border-accent/30 bg-accent/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
                     Asesoría energética para empresas
                   </span>
@@ -81,11 +87,13 @@ export default function Hero({
                   </div>
                 </div>
 
-                <div className="lg:col-span-5">
+                <div className="order-1 md:order-none lg:col-span-5">
                   <LeadForm
                     modo={modo}
                     nombreInicial={nombreInicial}
                     telefonoInicial={telefonoInicial}
+                    consentToken={consentToken}
+                    consentInitialState={consentInitialState}
                   />
                 </div>
               </div>
